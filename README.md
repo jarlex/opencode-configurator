@@ -275,6 +275,10 @@ internal/
 
 **Data flow:** `opencode.json` + `skills/` directory are parsed into an `AppState` (offline-first). If the OpenCode API is reachable, live data (MCP status, tool IDs) is fetched asynchronously and merged into the state without blocking the UI.
 
+## Roadmap
+
+See [ROADMAP.md](ROADMAP.md) for planned features and improvements across upcoming versions (v0.2.0 through v1.0.0).
+
 ## License
 
 [MIT](LICENSE)
