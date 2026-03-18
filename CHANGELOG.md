@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+#### Documentation
+- Configuration Formats reference in README documenting agent, skill, MCP, and provider JSON/YAML structures
+- Field-level documentation with types, required/optional status, and descriptions
+- Skill SKILL.md frontmatter format and directory layout guide
+
 #### Configuration Parsing
 - Parse `opencode.json` into typed domain models (agents, MCP servers, providers)
 - Scan `~/.config/opencode/skills/*/SKILL.md` for skill metadata via YAML frontmatter
