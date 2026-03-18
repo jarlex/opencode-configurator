@@ -304,10 +304,12 @@ func (a AppModel) View() string {
 		detailWidth = 10
 	}
 
-	// Panel inner dimensions (subtract border: 2 horizontal per panel)
+	// Panel inner dimensions.
+	// ListPanel border: 1 left + 1 right = 2 horizontal, 1 top + 1 bottom = 2 vertical.
+	// DetailPanel border: 2 horizontal + PaddingLeft(1) + PaddingRight(1) = 4 horizontal, 2 vertical.
 	listInnerW := listWidth - 2
-	detailInnerW := detailWidth - 2
-	panelInnerH := contentHeight - 2 // top+bottom border
+	detailInnerW := detailWidth - 2 - 2 // border(2) + padding(2)
+	panelInnerH := contentHeight - 2    // top+bottom border (same for both panels)
 
 	if listInnerW < 1 {
 		listInnerW = 1
@@ -396,9 +398,11 @@ func (a *AppModel) updateLayout() {
 	listWidth := innerWidth * 30 / 100
 	detailWidth := innerWidth - listWidth
 
+	// ListPanel border: 1 left + 1 right = 2 horizontal, 1 top + 1 bottom = 2 vertical.
+	// DetailPanel border: 2 horizontal + PaddingLeft(1) + PaddingRight(1) = 4 horizontal, 2 vertical.
 	listInnerW := listWidth - 2
-	detailInnerW := detailWidth - 2
-	panelInnerH := contentHeight - 2
+	detailInnerW := detailWidth - 2 - 2 // border(2) + padding(2)
+	panelInnerH := contentHeight - 2    // top+bottom border (same for both panels)
 
 	if listInnerW < 1 {
 		listInnerW = 1
