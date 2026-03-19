@@ -291,9 +291,20 @@ func (a AppModel) View() string {
 		contentHeight = 1
 	}
 
+	// panelHeight is the OUTER rendered height for both panels (including border).
+	// Both panels share this single value to guarantee identical visual height.
+	panelHeight := contentHeight
+	if panelHeight < 3 {
+		panelHeight = 3 // minimum: 1 row content + 2 rows border
+	}
+
+	// panelInnerH is the content height INSIDE each panel's border (top+bottom = 2).
+	panelInnerH := panelHeight - 2
+	if panelInnerH < 1 {
+		panelInnerH = 1
+	}
+
 	// Split: list (30%) | detail (70%)
-	// Each panel has a 1-char border on each side = 2 per panel.
-	// We also need to account for the border overlap between them.
 	listWidth := innerWidth * 30 / 100
 	detailWidth := innerWidth - listWidth
 
@@ -304,41 +315,45 @@ func (a AppModel) View() string {
 		detailWidth = 10
 	}
 
-	// Panel inner dimensions.
-	// ListPanel border: 1 left + 1 right = 2 horizontal, 1 top + 1 bottom = 2 vertical.
-	// DetailPanel border: 2 horizontal + PaddingLeft(1) + PaddingRight(1) = 4 horizontal, 2 vertical.
-	listInnerW := listWidth - 2
-	detailInnerW := detailWidth - 2 - 2 // border(2) + padding(2)
-	panelInnerH := contentHeight - 2    // top+bottom border (same for both panels)
+	// Panel inner dimensions (widths).
+	// ListPanel has border only (no padding): 1 left + 1 right = 2 horizontal.
+	// DetailPanel has border (2) + PaddingLeft(1) + PaddingRight(1).
+	// lipgloss Width(n) is the content width INSIDE the style — padding is
+	// subtracted automatically, so we only subtract the border here.
+	listInnerW := listWidth - 2        // Width for panel content (no padding on ListPanel)
+	detailPanelW := detailWidth - 2    // Width for DetailPanel style (border only; padding handled by lipgloss)
+	detailContentW := detailPanelW - 2 // Content width for viewport (inside padding)
 
 	if listInnerW < 1 {
 		listInnerW = 1
 	}
-	if detailInnerW < 1 {
-		detailInnerW = 1
+	if detailPanelW < 1 {
+		detailPanelW = 1
 	}
-	if panelInnerH < 1 {
-		panelInnerH = 1
+	if detailContentW < 1 {
+		detailContentW = 1
 	}
 
 	// Update sub-component sizes (inner dimensions for the content)
 	a.listView.SetSize(listInnerW, panelInnerH)
-	a.detail.SetSize(detailInnerW, panelInnerH)
+	a.detail.SetSize(detailContentW, panelInnerH)
 
-	// Render each section
+	// Render each section.
+	// CRITICAL: Both panels use Height(panelHeight) on their style to FORCE
+	// identical outer rendered height, regardless of content length.
 	tabBarView := a.tabBar.View()
 
-	listView := ListPanel.
+	listRendered := ListPanel.
 		Width(listInnerW).
-		Height(panelInnerH).
+		Height(panelHeight).
 		Render(a.listView.View())
 
-	detailView := DetailPanel.
-		Width(detailInnerW).
-		Height(panelInnerH).
+	detailRendered := DetailPanel.
+		Width(detailPanelW).
+		Height(panelHeight).
 		Render(a.detail.View())
 
-	contentView := lipgloss.JoinHorizontal(lipgloss.Top, listView, detailView)
+	contentView := lipgloss.JoinHorizontal(lipgloss.Top, listRendered, detailRendered)
 
 	statusBarView := a.statusBar.View()
 
@@ -394,24 +409,34 @@ func (a *AppModel) updateLayout() {
 		contentHeight = 1
 	}
 
+	// panelHeight is the OUTER rendered height for both panels (including border).
+	panelHeight := contentHeight
+	if panelHeight < 3 {
+		panelHeight = 3
+	}
+
+	// panelInnerH is the content height INSIDE each panel's border (top+bottom = 2).
+	panelInnerH := panelHeight - 2
+	if panelInnerH < 1 {
+		panelInnerH = 1
+	}
+
 	// Each panel has its own border (2 chars each side)
 	listWidth := innerWidth * 30 / 100
 	detailWidth := innerWidth - listWidth
 
-	// ListPanel border: 1 left + 1 right = 2 horizontal, 1 top + 1 bottom = 2 vertical.
-	// DetailPanel border: 2 horizontal + PaddingLeft(1) + PaddingRight(1) = 4 horizontal, 2 vertical.
-	listInnerW := listWidth - 2
+	// ListPanel has border only (no padding): 1 left + 1 right = 2 horizontal.
+	// DetailPanel has border (2) + PaddingLeft(1) + PaddingRight(1).
+	// lipgloss Width(n) is the content width INSIDE the style — padding is
+	// subtracted automatically, so we only subtract the border here.
+	listInnerW := listWidth - 2         // Width for panel (no padding on ListPanel)
 	detailInnerW := detailWidth - 2 - 2 // border(2) + padding(2)
-	panelInnerH := contentHeight - 2    // top+bottom border (same for both panels)
 
 	if listInnerW < 1 {
 		listInnerW = 1
 	}
 	if detailInnerW < 1 {
 		detailInnerW = 1
-	}
-	if panelInnerH < 1 {
-		panelInnerH = 1
 	}
 
 	a.listView.SetSize(listInnerW, panelInnerH)
