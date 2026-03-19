@@ -152,6 +152,23 @@ func (a AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return a, tea.Batch(cmds...)
 		}
 
+		if key.Matches(msg, a.keys.Tab1) {
+			a.tabBar.ActiveTab = 0
+			return a, func() tea.Msg { return TabChangedMsg{ActiveTab: 0} }
+		}
+		if key.Matches(msg, a.keys.Tab2) {
+			a.tabBar.ActiveTab = 1
+			return a, func() tea.Msg { return TabChangedMsg{ActiveTab: 1} }
+		}
+		if key.Matches(msg, a.keys.Tab3) {
+			a.tabBar.ActiveTab = 2
+			return a, func() tea.Msg { return TabChangedMsg{ActiveTab: 2} }
+		}
+		if key.Matches(msg, a.keys.Tab4) {
+			a.tabBar.ActiveTab = 3
+			return a, func() tea.Msg { return TabChangedMsg{ActiveTab: 3} }
+		}
+
 		// Filter key — forward to list
 		if key.Matches(msg, a.keys.Filter) {
 			var cmd tea.Cmd

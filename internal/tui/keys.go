@@ -7,6 +7,10 @@ type KeyMap struct {
 	// Navigation
 	Tab      key.Binding
 	ShiftTab key.Binding
+	Tab1     key.Binding
+	Tab2     key.Binding
+	Tab3     key.Binding
+	Tab4     key.Binding
 	Up       key.Binding
 	Down     key.Binding
 
@@ -35,6 +39,22 @@ func DefaultKeyMap() KeyMap {
 		ShiftTab: key.NewBinding(
 			key.WithKeys("shift+tab"),
 			key.WithHelp("shift+tab", "prev tab"),
+		),
+		Tab1: key.NewBinding(
+			key.WithKeys("1"),
+			key.WithHelp("1", "tab 1"),
+		),
+		Tab2: key.NewBinding(
+			key.WithKeys("2"),
+			key.WithHelp("2", "tab 2"),
+		),
+		Tab3: key.NewBinding(
+			key.WithKeys("3"),
+			key.WithHelp("3", "tab 3"),
+		),
+		Tab4: key.NewBinding(
+			key.WithKeys("4"),
+			key.WithHelp("4", "tab 4"),
 		),
 		Up: key.NewBinding(
 			key.WithKeys("up", "k"),
