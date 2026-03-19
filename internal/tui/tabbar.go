@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -19,6 +20,7 @@ type TabChangedMsg struct {
 // TabBarModel tracks tab selection and renders the tab bar.
 type TabBarModel struct {
 	ActiveTab int
+	Counts    []int
 	width     int
 	keys      KeyMap
 }
@@ -27,6 +29,7 @@ type TabBarModel struct {
 func NewTabBar(keys KeyMap) TabBarModel {
 	return TabBarModel{
 		ActiveTab: 0,
+		Counts:    make([]int, len(TabNames)),
 		keys:      keys,
 	}
 }
@@ -57,14 +60,23 @@ func (t *TabBarModel) SetWidth(w int) {
 	t.width = w
 }
 
+// SetCounts updates the tab item counts.
+func (t *TabBarModel) SetCounts(counts []int) {
+	t.Counts = counts
+}
+
 // View renders the tab bar.
 func (t TabBarModel) View() string {
 	var tabs []string
 	for i, name := range TabNames {
+		label := name
+		if i < len(t.Counts) {
+			label = fmt.Sprintf("%s (%d)", name, t.Counts[i])
+		}
 		if i == t.ActiveTab {
-			tabs = append(tabs, TabActive.Render(name))
+			tabs = append(tabs, TabActive.Render(label))
 		} else {
-			tabs = append(tabs, TabInactive.Render(name))
+			tabs = append(tabs, TabInactive.Render(label))
 		}
 	}
 

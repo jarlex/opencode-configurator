@@ -245,6 +245,15 @@ func (a AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.statusBar.SetOnline(msg.State.Online)
 		a.statusBar.SetAPIError(msg.State.APIError)
 		a.statusBar.SetRefreshing(false)
+
+		counts := []int{
+			len(a.state.Agents),
+			len(a.state.Skills),
+			len(a.state.MCPs),
+			len(a.state.Providers),
+		}
+		a.tabBar.SetCounts(counts)
+
 		a.populateList(a.tabBar.ActiveTab)
 		return a, nil
 
