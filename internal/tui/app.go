@@ -9,6 +9,7 @@ import (
 	"github.com/jarlex/opencode-configurator/internal/api"
 	"github.com/jarlex/opencode-configurator/internal/merge"
 	"github.com/jarlex/opencode-configurator/internal/model"
+	"sort"
 )
 
 // DataLoadedMsg signals that AppState data is ready (after async enrichment).
@@ -486,6 +487,11 @@ func (a *AppModel) populateList(tab int) {
 	case 3:
 		items = ProvidersToItems(a.state.Providers)
 	}
+
+
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].FilterValue() < items[j].FilterValue()
+	})
 
 	a.listView.SetItems(items)
 	a.updateDetail()

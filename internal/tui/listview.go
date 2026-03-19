@@ -121,6 +121,11 @@ func (lv *ListViewModel) SelectedItem() *EntityItem {
 	return &ei
 }
 
+// Items returns the current list items.
+func (lv *ListViewModel) Items() []list.Item {
+	return lv.list.Items()
+}
+
 // Filtering returns true if the list is in filtering mode.
 func (lv *ListViewModel) Filtering() bool {
 	return lv.list.FilterState() == list.Filtering

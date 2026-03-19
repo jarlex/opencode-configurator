@@ -38,3 +38,31 @@ func TestAppModel_TabSwitching(t *testing.T) {
 		t.Errorf("expected tab to remain 3, but got %d", newApp.tabBar.ActiveTab)
 	}
 }
+
+func TestAppModel_PopulateListSorting(t *testing.T) {
+	state := &model.AppState{
+		Agents: []model.Agent{
+			{Name: "Zebra"},
+			{Name: "Apple"},
+			{Name: "Mango"},
+		},
+	}
+
+	app := NewApp(state, nil)
+	app.populateList(0)
+
+	items := app.listView.Items()
+	if len(items) != 3 {
+		t.Fatalf("expected 3 items, got %d", len(items))
+	}
+
+	if items[0].FilterValue() != "Apple" {
+		t.Errorf("expected Apple, got %s", items[0].FilterValue())
+	}
+	if items[1].FilterValue() != "Mango" {
+		t.Errorf("expected Mango, got %s", items[1].FilterValue())
+	}
+	if items[2].FilterValue() != "Zebra" {
+		t.Errorf("expected Zebra, got %s", items[2].FilterValue())
+	}
+}
