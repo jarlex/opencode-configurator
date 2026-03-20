@@ -22,14 +22,15 @@ A terminal dashboard for inspecting and exploring your [OpenCode](https://openco
 
 ## Features
 
-- **4 navigable tabs** — Agents, Skills, MCP Servers, and Providers (switch quickly with `1`-`4` keys)
+- **4 navigable tabs** — Agents, Skills, MCP Servers, and Providers
 - **Dynamic tab counts** — instantly see how many items are in each section (e.g., "Agents (10)")
 - **Alphabetical sorting** — list items are automatically sorted A-Z for easy scanning
 - **Offline-first** — launches instantly from your `opencode.json` config file; no running server required
 - **Live API enrichment** — connects to the OpenCode API for real-time MCP status and tool data
 - **Filterable lists** — fuzzy search across all items with `/`
 - **Scrollable detail panel** — full agent prompts, tool lists, and permissions at a glance
-- **Keyboard-driven** — navigate everything without touching the mouse
+- **Full-screen & split view** — hit `Enter` to expand details, or adjust the default ratio with `--split`
+- **Keyboard-driven** — navigate everything without touching the mouse (including copy with `y` and toggle hidden with `h`)
 - **Responsive layout** — adapts to terminal resize (minimum 80x24)
 - **Single binary** — zero external runtime dependencies
 
@@ -66,19 +67,24 @@ opencode-configurator --url http://localhost:4096
 # Use a specific config file
 opencode-configurator --config /path/to/opencode.json
 
-# Both options combined
-opencode-configurator --url http://localhost:4096 --config ./opencode.json
+# Adjust the list/detail split ratio (default is 0.3)
+opencode-configurator --split 0.4
+
+# All options combined
+opencode-configurator --url http://localhost:4096 --config ./opencode.json --split 0.4
 ```
 
 ## Keyboard Shortcuts
 
 | Key | Action |
 |-----|--------|
-| `1`-`4` | Quick switch to tabs 1 through 4 |
 | `Tab` | Next tab |
 | `Shift+Tab` | Previous tab |
 | `j` / `↓` | Next item in list |
 | `k` / `↑` | Previous item in list |
+| `Enter` | Toggle full-screen detail view |
+| `h` | Toggle hidden items (Agents tab only) |
+| `y` | Copy current detail text to clipboard |
 | `/` | Filter items (fuzzy search) |
 | `Esc` | Clear filter / close overlay |
 | `r` | Refresh data from API |

@@ -57,7 +57,7 @@ func (d entityItemDelegate) Render(w io.Writer, m list.Model, index int, item li
 	if i.description != "" {
 		line += " " + DetailMuted.Render("("+i.description+")")
 	}
-	fmt.Fprint(w, style.Render(line))
+	_, _ = fmt.Fprint(w, style.Render(line))
 }
 
 // ListViewModel wraps a Bubbles list.Model for entity navigation.

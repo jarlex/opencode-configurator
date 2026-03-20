@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -8,12 +9,16 @@ import (
 
 // StatusBarModel renders the bottom status bar.
 type StatusBarModel struct {
-	Online     bool
-	APIError   string
-	Refreshing bool
-	FilterText string
-	Warning    string
-	width      int
+	Online        bool
+	APIError      string
+	Refreshing    bool
+	FilterText    string
+	Warning       string
+	ScrollPercent float64
+	ConfigPath    string
+	SuccessMsg    string
+
+	width int
 }
 
 // NewStatusBar creates a new StatusBarModel.
@@ -53,33 +58,9 @@ func (s *StatusBarModel) SetWarning(text string) {
 
 // View renders the status bar.
 func (s StatusBarModel) View() string {
-	// Left side: connection status
-	var status string
-	if s.Refreshing {
-		status = StatusRefreshing.Render("\u27f3 Refreshing...")
-	} else if s.Online {
-		status = StatusOnline.Render("\u25cf Online")
-	} else if s.APIError != "" && containsTimeout(s.APIError) {
-		status = StatusOffline.Render("\u25cb Offline (timeout)")
-	} else {
-		status = StatusOffline.Render("\u25cb Offline")
-	}
-
-	// Add API error if present
-	if s.APIError != "" && !s.Refreshing {
-		status += "  " + DetailMuted.Render(s.APIError)
-	} else if s.Warning != "" && !s.Refreshing {
-		status += "  " + StatusFilter.Render(s.Warning)
-	}
-
-	// Center: filter indicator
-	var filter string
-	if s.FilterText != "" {
-		filter = StatusFilter.Render("Filter: " + s.FilterText)
-	}
-
-	// Right side: key hints
-	hints := StatusHint.Render("tab:switch  /:filter  pgdn/pgup:scroll  r:refresh  ?:help  q:quit")
+	status := s.renderLeft()
+	filter := s.renderCenter()
+	hints := s.renderRight()
 
 	// Layout: status (left) | filter (center) | hints (right)
 	leftWidth := lipgloss.Width(status)
@@ -107,6 +88,53 @@ func (s StatusBarModel) View() string {
 	}
 
 	return StatusBar.Width(s.width).Render(bar)
+}
+
+func (s StatusBarModel) renderLeft() string {
+	var status string
+	if s.Refreshing {
+		status = StatusRefreshing.Render("\u27f3 Refreshing...")
+	} else if s.Online {
+		status = StatusOnline.Render("\u25cf Online")
+	} else if s.APIError != "" && containsTimeout(s.APIError) {
+		status = StatusOffline.Render("\u25cb Offline (timeout)")
+	} else {
+		status = StatusOffline.Render("\u25cb Offline")
+	}
+
+	if s.APIError != "" && !s.Refreshing {
+		if s.SuccessMsg != "" {
+			status += "  " + StatusFilter.Render(s.SuccessMsg)
+		}
+
+		if s.ConfigPath != "" {
+			status += "  " + DetailMuted.Render(s.ConfigPath)
+		}
+
+		status += "  " + DetailMuted.Render(s.APIError)
+	} else if s.Warning != "" && !s.Refreshing {
+		status += "  " + StatusFilter.Render(s.Warning)
+	}
+	return status
+}
+
+func (s StatusBarModel) renderCenter() string {
+	if s.FilterText != "" {
+		return StatusFilter.Render("Filter: " + s.FilterText)
+	}
+	return ""
+}
+
+func (s StatusBarModel) renderRight() string {
+	scrollPos := ""
+	if s.ScrollPercent <= 0.0 {
+		scrollPos = "Top"
+	} else if s.ScrollPercent >= 1.0 {
+		scrollPos = "Bot"
+	} else {
+		scrollPos = fmt.Sprintf("%3.0f%%", s.ScrollPercent*100)
+	}
+	return StatusHint.Render(fmt.Sprintf("%s | tab:switch h:hide y:copy ?:help q:quit", scrollPos))
 }
 
 // containsTimeout checks if an error string indicates a timeout.

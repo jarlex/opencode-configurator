@@ -72,3 +72,13 @@ func (d DetailViewModel) View() string {
 	}
 	return d.viewport.View()
 }
+
+// Content returns the current detail text.
+func (d DetailViewModel) Content() string {
+	return d.content
+}
+
+// ScrollPercent returns the viewport scroll percentage.
+func (d DetailViewModel) ScrollPercent() float64 {
+	return d.viewport.ScrollPercent()
+}

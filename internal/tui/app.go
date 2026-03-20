@@ -1,8 +1,10 @@
 package tui
 
 import (
+	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
@@ -35,23 +37,30 @@ type AppModel struct {
 	apiClient *api.Client
 	showHelp  bool
 
-	width  int
-	height int
-	ready  bool
+	width            int
+	height           int
+	ready            bool
+	ShowHidden       bool
+	FullScreenDetail bool
+	SplitRatio       int
+	ConfigPath       string
+	SuccessMsg       string
 }
 
 // NewApp creates the root application model with initial state.
-func NewApp(state *model.AppState, client *api.Client) AppModel {
+func NewApp(state *model.AppState, client *api.Client, splitRatio int, configPath string) AppModel {
 	keys := DefaultKeyMap()
 	app := AppModel{
-		state:     state,
-		tabBar:    NewTabBar(keys),
-		listView:  NewListView(keys),
-		detail:    NewDetailView(),
-		statusBar: NewStatusBar(),
-		help:      NewHelpOverlay(keys),
-		keys:      keys,
-		apiClient: client,
+		SplitRatio: splitRatio,
+		ConfigPath: configPath,
+		state:      state,
+		tabBar:     NewTabBar(keys),
+		listView:   NewListView(keys),
+		detail:     NewDetailView(),
+		statusBar:  NewStatusBar(),
+		help:       NewHelpOverlay(keys),
+		keys:       keys,
+		apiClient:  client,
 	}
 	app.statusBar.SetOnline(state.Online)
 	app.statusBar.SetAPIError(state.APIError)
@@ -93,171 +102,25 @@ func (a AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
-
 	case tea.WindowSizeMsg:
-		a.width = msg.Width
-		a.height = msg.Height
-		a.ready = true
-		a.updateLayout()
-		return a, nil
-
+		return a.handleWindowSize(msg)
 	case tea.KeyMsg:
-		// Global keys that are always active
-		if key.Matches(msg, a.keys.ForceQuit) {
-			return a, tea.Quit
-		}
-
-		// Help overlay intercepts everything when visible
-		if a.showHelp {
-			if key.Matches(msg, a.keys.Help) || key.Matches(msg, a.keys.Escape) {
-				a.showHelp = false
-			}
-			return a, nil
-		}
-
-		// Don't intercept keys while filtering
-		if a.listView.Filtering() {
-			var cmd tea.Cmd
-			a.listView, cmd = a.listView.Update(msg)
-			if cmd != nil {
-				cmds = append(cmds, cmd)
-			}
-			// Update filter indicator in status bar
-			a.statusBar.SetFilter(a.listView.FilterValue())
-			return a, tea.Batch(cmds...)
-		}
-
-		if key.Matches(msg, a.keys.Quit) {
-			return a, tea.Quit
-		}
-
-		// Help toggle
-		if key.Matches(msg, a.keys.Help) {
-			a.showHelp = !a.showHelp
-			return a, nil
-		}
-
-		// Refresh — async API re-enrichment (SC-6, FR-14)
-		if key.Matches(msg, a.keys.Refresh) {
-			a.statusBar.SetRefreshing(true)
-			return a, a.enrichCmd()
-		}
-
-		// Tab switching
-		if key.Matches(msg, a.keys.Tab) || key.Matches(msg, a.keys.ShiftTab) {
-			var cmd tea.Cmd
-			a.tabBar, cmd = a.tabBar.Update(msg)
-			if cmd != nil {
-				cmds = append(cmds, cmd)
-			}
-			return a, tea.Batch(cmds...)
-		}
-
-		if key.Matches(msg, a.keys.Tab1) {
-			a.tabBar.ActiveTab = 0
-			return a, func() tea.Msg { return TabChangedMsg{ActiveTab: 0} }
-		}
-		if key.Matches(msg, a.keys.Tab2) {
-			a.tabBar.ActiveTab = 1
-			return a, func() tea.Msg { return TabChangedMsg{ActiveTab: 1} }
-		}
-		if key.Matches(msg, a.keys.Tab3) {
-			a.tabBar.ActiveTab = 2
-			return a, func() tea.Msg { return TabChangedMsg{ActiveTab: 2} }
-		}
-		if key.Matches(msg, a.keys.Tab4) {
-			a.tabBar.ActiveTab = 3
-			return a, func() tea.Msg { return TabChangedMsg{ActiveTab: 3} }
-		}
-
-		// Filter key — forward to list
-		if key.Matches(msg, a.keys.Filter) {
-			var cmd tea.Cmd
-			a.listView, cmd = a.listView.Update(msg)
-			if cmd != nil {
-				cmds = append(cmds, cmd)
-			}
-			return a, tea.Batch(cmds...)
-		}
-
-		// Navigation — forward to list
-		if key.Matches(msg, a.keys.Up) || key.Matches(msg, a.keys.Down) {
-			var cmd tea.Cmd
-			a.listView, cmd = a.listView.Update(msg)
-			if cmd != nil {
-				cmds = append(cmds, cmd)
-			}
-			return a, tea.Batch(cmds...)
-		}
-
-		// Escape: clear filter if active
-		if key.Matches(msg, a.keys.Escape) {
-			if a.listView.FilterValue() != "" {
-				var cmd tea.Cmd
-				a.listView, cmd = a.listView.Update(msg)
-				a.statusBar.SetFilter("")
-				if cmd != nil {
-					cmds = append(cmds, cmd)
-				}
-				return a, tea.Batch(cmds...)
-			}
-		}
-
-		// Detail viewport scroll — explicit keys for scrolling detail content.
-		// PgUp/PgDn, Ctrl+U/Ctrl+D, and f/b all scroll the detail panel.
-		if key.Matches(msg, a.keys.PageDown) || key.Matches(msg, a.keys.PageUp) ||
-			key.Matches(msg, a.keys.HalfPageUp) || key.Matches(msg, a.keys.HalfPageDn) {
-			var cmd tea.Cmd
-			a.detail, cmd = a.detail.Update(msg)
-			if cmd != nil {
-				cmds = append(cmds, cmd)
-			}
-			return a, tea.Batch(cmds...)
-		}
-
-		// Remaining keys — forward to detail viewport as catch-all
-		var cmd tea.Cmd
-		a.detail, cmd = a.detail.Update(msg)
-		if cmd != nil {
-			cmds = append(cmds, cmd)
-		}
-		return a, tea.Batch(cmds...)
-
+		return a.handleKeyMsg(msg)
 	case tea.MouseMsg:
-		// Forward mouse events to the detail viewport for scroll support.
-		// The detail viewport handles mouse wheel internally.
 		var cmd tea.Cmd
 		a.detail, cmd = a.detail.Update(msg)
 		if cmd != nil {
 			cmds = append(cmds, cmd)
 		}
 		return a, tea.Batch(cmds...)
-
 	case TabChangedMsg:
 		a.populateList(msg.ActiveTab)
 		return a, nil
-
 	case SelectionChangedMsg:
 		a.updateDetail()
 		return a, nil
-
 	case DataLoadedMsg:
-		a.state = msg.State
-		a.statusBar.SetOnline(msg.State.Online)
-		a.statusBar.SetAPIError(msg.State.APIError)
-		a.statusBar.SetRefreshing(false)
-
-		counts := []int{
-			len(a.state.Agents),
-			len(a.state.Skills),
-			len(a.state.MCPs),
-			len(a.state.Providers),
-		}
-		a.tabBar.SetCounts(counts)
-
-		a.populateList(a.tabBar.ActiveTab)
-		return a, nil
-
+		return a.handleDataLoaded(msg)
 	case EnrichErrorMsg:
 		a.statusBar.SetRefreshing(false)
 		a.statusBar.SetAPIError(msg.Err.Error())
@@ -265,6 +128,167 @@ func (a AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return a, tea.Batch(cmds...)
+}
+
+func (a AppModel) handleWindowSize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
+	a.width = msg.Width
+	a.height = msg.Height
+	a.ready = true
+	a.updateLayout()
+	return a, nil
+}
+
+func (a AppModel) handleDataLoaded(msg DataLoadedMsg) (tea.Model, tea.Cmd) {
+	a.state = msg.State
+	a.statusBar.SetOnline(msg.State.Online)
+	a.statusBar.SetAPIError(msg.State.APIError)
+	a.statusBar.SetRefreshing(false)
+
+	counts := []int{
+		len(a.state.Agents),
+		len(a.state.Skills),
+		len(a.state.MCPs),
+		len(a.state.Providers),
+	}
+	a.tabBar.SetCounts(counts)
+
+	a.populateList(a.tabBar.ActiveTab)
+	return a, nil
+}
+
+func (a AppModel) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
+
+	if !key.Matches(msg, a.keys.CopyDetail) {
+		a.SuccessMsg = ""
+	}
+
+	if key.Matches(msg, a.keys.ForceQuit) {
+		return a, tea.Quit
+	}
+
+	if a.showHelp {
+		if key.Matches(msg, a.keys.Help) || key.Matches(msg, a.keys.Escape) {
+			a.showHelp = false
+		}
+		return a, nil
+	}
+
+	if a.listView.Filtering() {
+		var cmd tea.Cmd
+		a.listView, cmd = a.listView.Update(msg)
+		if cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+		a.statusBar.SetFilter(a.listView.FilterValue())
+		return a, tea.Batch(cmds...)
+	}
+
+	if key.Matches(msg, a.keys.Quit) {
+		return a, tea.Quit
+	}
+
+	if key.Matches(msg, a.keys.Help) {
+		a.showHelp = !a.showHelp
+		return a, nil
+	}
+
+	if key.Matches(msg, a.keys.Refresh) {
+		a.statusBar.SetRefreshing(true)
+		return a, a.enrichCmd()
+	}
+
+	if handled, model, cmd := a.handleTabKeys(msg); handled {
+		return model, cmd
+	}
+
+	if handled, model, cmd := a.handleActionKeys(msg); handled {
+		return model, cmd
+	}
+
+	if handled, model, cmd := a.handleListKeys(msg); handled {
+		return model, cmd
+	}
+
+	// Remaining keys forward to detail
+	var cmd tea.Cmd
+	a.detail, cmd = a.detail.Update(msg)
+	if cmd != nil {
+		cmds = append(cmds, cmd)
+	}
+	return a, tea.Batch(cmds...)
+}
+
+func (a AppModel) handleTabKeys(msg tea.KeyMsg) (bool, tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
+	if key.Matches(msg, a.keys.Tab) || key.Matches(msg, a.keys.ShiftTab) {
+		var cmd tea.Cmd
+		a.tabBar, cmd = a.tabBar.Update(msg)
+		if cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+		return true, a, tea.Batch(cmds...)
+	}
+
+	return false, a, nil
+}
+
+func (a AppModel) handleActionKeys(msg tea.KeyMsg) (bool, tea.Model, tea.Cmd) {
+	if key.Matches(msg, a.keys.ToggleHidden) {
+		a.ShowHidden = !a.ShowHidden
+		a.populateList(a.tabBar.ActiveTab)
+		return true, a, nil
+	}
+	if key.Matches(msg, a.keys.FullScreen) {
+		a.FullScreenDetail = !a.FullScreenDetail
+		return true, a, nil
+	}
+	if key.Matches(msg, a.keys.CopyDetail) {
+		err := clipboard.WriteAll(a.detail.Content())
+		if err == nil {
+			a.SuccessMsg = "Copied to clipboard"
+		} else {
+			a.SuccessMsg = "Copy failed"
+		}
+		return true, a, nil
+	}
+	return false, a, nil
+}
+
+func (a AppModel) handleListKeys(msg tea.KeyMsg) (bool, tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
+	if key.Matches(msg, a.keys.Filter) || key.Matches(msg, a.keys.Up) || key.Matches(msg, a.keys.Down) {
+		var cmd tea.Cmd
+		a.listView, cmd = a.listView.Update(msg)
+		if cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+		return true, a, tea.Batch(cmds...)
+	}
+
+	if key.Matches(msg, a.keys.Escape) {
+		if a.listView.FilterValue() != "" {
+			var cmd tea.Cmd
+			a.listView, cmd = a.listView.Update(msg)
+			a.statusBar.SetFilter("")
+			if cmd != nil {
+				cmds = append(cmds, cmd)
+			}
+			return true, a, tea.Batch(cmds...)
+		}
+	}
+
+	if key.Matches(msg, a.keys.PageDown) || key.Matches(msg, a.keys.PageUp) ||
+		key.Matches(msg, a.keys.HalfPageUp) || key.Matches(msg, a.keys.HalfPageDn) {
+		var cmd tea.Cmd
+		a.detail, cmd = a.detail.Update(msg)
+		if cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+		return true, a, tea.Batch(cmds...)
+	}
+
+	return false, a, nil
 }
 
 // appDimensions calculates the effective app width and height.
@@ -319,7 +343,6 @@ func (a AppModel) View() string {
 	}
 
 	// panelHeight is the OUTER rendered height for both panels (including border).
-	// Both panels share this single value to guarantee identical visual height.
 	panelHeight := contentHeight
 	if panelHeight < 3 {
 		panelHeight = 3 // minimum: 1 row content + 2 rows border
@@ -331,28 +354,14 @@ func (a AppModel) View() string {
 		panelInnerH = 1
 	}
 
-	// Split: list (30%) | detail (70%)
-	listWidth := innerWidth * 30 / 100
-	detailWidth := innerWidth - listWidth
+	listWidth, detailWidth := a.calculatePanelWidths(innerWidth)
 
-	if listWidth < 10 {
-		listWidth = 10
-	}
-	if detailWidth < 10 {
-		detailWidth = 10
-	}
-
-	// Panel inner dimensions (widths).
-	// ListPanel has border only (no padding): 1 left + 1 right = 2 horizontal.
-	// DetailPanel has border (2) + PaddingLeft(1) + PaddingRight(1).
-	// lipgloss Width(n) is the content width INSIDE the style — padding is
-	// subtracted automatically, so we only subtract the border here.
-	listInnerW := listWidth - 2        // Width for panel content (no padding on ListPanel)
-	detailPanelW := detailWidth - 2    // Width for DetailPanel style (border only; padding handled by lipgloss)
-	detailContentW := detailPanelW - 2 // Content width for viewport (inside padding)
+	listInnerW := listWidth - 2        // Width for panel content
+	detailPanelW := detailWidth - 2    // Width for DetailPanel style
+	detailContentW := detailPanelW - 2 // Content width for viewport
 
 	if listInnerW < 1 {
-		listInnerW = 1
+		listInnerW = 0
 	}
 	if detailPanelW < 1 {
 		detailPanelW = 1
@@ -361,13 +370,52 @@ func (a AppModel) View() string {
 		detailContentW = 1
 	}
 
-	// Update sub-component sizes (inner dimensions for the content)
+	// Update sub-component sizes
 	a.listView.SetSize(listInnerW, panelInnerH)
 	a.detail.SetSize(detailContentW, panelInnerH)
 
-	// Render each section.
-	// CRITICAL: Both panels use Height(panelHeight) on their style to FORCE
-	// identical outer rendered height, regardless of content length.
+	innerUI := a.renderInnerUI(listInnerW, detailPanelW, panelHeight)
+
+	// Wrap everything in the outer app frame
+	ui := AppFrame.
+		Width(innerWidth).
+		Height(innerHeight).
+		Render(innerUI)
+
+	// Help overlay on top of everything
+	if a.showHelp {
+		a.help.SetSize(appWidth, appHeight)
+		return lipgloss.Place(a.width, a.height,
+			lipgloss.Left, lipgloss.Center,
+			a.help.View(ui),
+			lipgloss.WithWhitespaceChars(" "),
+		)
+	}
+
+	return ui
+}
+
+func (a AppModel) calculatePanelWidths(innerWidth int) (int, int) {
+	ratio := a.SplitRatio
+	if ratio <= 0 || ratio > 90 {
+		ratio = 30
+	}
+	listWidth := innerWidth * ratio / 100
+	if a.FullScreenDetail {
+		listWidth = 0
+	}
+	detailWidth := innerWidth - listWidth
+
+	if !a.FullScreenDetail && listWidth < 10 {
+		listWidth = 10
+	}
+	if detailWidth < 10 {
+		detailWidth = 10
+	}
+	return listWidth, detailWidth
+}
+
+func (a AppModel) renderInnerUI(listInnerW, detailPanelW, panelHeight int) string {
 	tabBarView := a.tabBar.View()
 
 	listRendered := ListPanel.
@@ -380,34 +428,22 @@ func (a AppModel) View() string {
 		Height(panelHeight).
 		Render(a.detail.View())
 
-	contentView := lipgloss.JoinHorizontal(lipgloss.Top, listRendered, detailRendered)
+	contentView := detailRendered
+	if !a.FullScreenDetail {
+		contentView = lipgloss.JoinHorizontal(lipgloss.Top, listRendered, detailRendered)
+	}
+
+	a.statusBar.ConfigPath = a.ConfigPath
+	a.statusBar.SuccessMsg = a.SuccessMsg
+	a.statusBar.ScrollPercent = a.detail.ScrollPercent()
 
 	statusBarView := a.statusBar.View()
 
-	innerUI := lipgloss.JoinVertical(lipgloss.Left,
+	return lipgloss.JoinVertical(lipgloss.Left,
 		tabBarView,
 		contentView,
 		statusBarView,
 	)
-
-	// Wrap everything in the outer app frame
-	ui := AppFrame.
-		Width(innerWidth).
-		Height(innerHeight).
-		Render(innerUI)
-
-	// Help overlay on top of everything (SC-10, FR-15)
-	if a.showHelp {
-		a.help.SetSize(appWidth, appHeight)
-		return lipgloss.Place(a.width, a.height,
-			lipgloss.Left, lipgloss.Center,
-			a.help.View(ui),
-			lipgloss.WithWhitespaceChars(" "),
-		)
-	}
-
-	// Return the framed app directly — no left margin.
-	return ui
 }
 
 // updateLayout recalculates all sub-component sizes.
@@ -449,7 +485,14 @@ func (a *AppModel) updateLayout() {
 	}
 
 	// Each panel has its own border (2 chars each side)
-	listWidth := innerWidth * 30 / 100
+	ratio := a.SplitRatio
+	if ratio <= 0 || ratio > 90 {
+		ratio = 30
+	}
+	listWidth := innerWidth * ratio / 100
+	if a.FullScreenDetail {
+		listWidth = 0
+	}
 	detailWidth := innerWidth - listWidth
 
 	// ListPanel has border only (no padding): 1 left + 1 right = 2 horizontal.
@@ -460,7 +503,7 @@ func (a *AppModel) updateLayout() {
 	detailInnerW := detailWidth - 2 - 2 // border(2) + padding(2)
 
 	if listInnerW < 1 {
-		listInnerW = 1
+		listInnerW = 0
 	}
 	if detailInnerW < 1 {
 		detailInnerW = 1
@@ -479,7 +522,13 @@ func (a *AppModel) populateList(tab int) {
 	var items []list.Item
 	switch tab {
 	case 0:
-		items = AgentsToItems(a.state.Agents)
+		var filtered []model.Agent
+		for _, agent := range a.state.Agents {
+			if !agent.Hidden || a.ShowHidden {
+				filtered = append(filtered, agent)
+			}
+		}
+		items = AgentsToItems(filtered)
 	case 1:
 		items = SkillsToItems(a.state.Skills)
 	case 2:
@@ -487,7 +536,6 @@ func (a *AppModel) populateList(tab int) {
 	case 3:
 		items = ProvidersToItems(a.state.Providers)
 	}
-
 
 	sort.Slice(items, func(i, j int) bool {
 		return items[i].FilterValue() < items[j].FilterValue()

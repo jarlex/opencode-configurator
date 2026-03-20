@@ -8,18 +8,18 @@ Overview of planned features and improvements for opencode-configurator.
 
 | ID | Feature | Effort | Priority |
 |----|---------|--------|----------|
-| A1 | Number keybindings (1-4) for direct tab switching | S | P1 |
-| A2 | Item counts in tab labels (e.g., "Agents (10)") | S | P1 |
-| A3 | Alphabetical list sorting | S | P1 |
-| A4 | Hidden agent toggle (`h` key) | S | P2 |
-| A5 | Copy detail to clipboard (`y` key) | S | P2 |
-| A6 | Configurable list/detail split ratio | S | P3 |
-| A7 | Full-screen detail view (`Enter` key) | M | P2 |
-| A8 | Scroll position indicator in status bar | S | P3 |
-| A9 | Config file path in status bar | S | P3 |
-| E1 | Unit tests for api and merge packages | M | P1 |
-| E2 | GitHub Actions CI pipeline | S | P1 |
-| E3 | golangci-lint integration | S | P2 |
+| [x] A1 | Number keybindings (1-4) for direct tab switching | S | P1 |
+| [x] A2 | Item counts in tab labels (e.g., "Agents (10)") | S | P1 |
+| [x] A3 | Alphabetical list sorting | S | P1 |
+| [x] A4 | Hidden agent toggle (`h` key) | S | P2 |
+| [x] A5 | Copy detail to clipboard (`y` key) | S | P2 |
+| [x] A6 | Configurable list/detail split ratio | S | P3 |
+| [x] A7 | Full-screen detail view (`Enter` key) | M | P2 |
+| [x] A8 | Scroll position indicator in status bar | S | P3 |
+| [x] A9 | Config file path in status bar | S | P3 |
+| [x] E1 | Unit tests for api and merge packages | M | P1 |
+| [x] E2 | GitHub Actions CI pipeline | S | P1 |
+| [x] E3 | golangci-lint integration | S | P2 |
 
 ## v0.3.0 — New Data Views
 

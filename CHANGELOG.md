@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.2.0] - 2026-03-20
+
+### Added
+
+#### TUI Features
+- Number keybindings (`1`-`4`) for direct tab switching
+- Item counts dynamically displayed in tab labels (e.g., "Agents (10)")
+- Alphabetical list sorting for all items
+- Hidden agent toggle via the `h` key
+- Copy detail text to clipboard via the `y` key
+- Configurable list/detail split ratio via the `--split` flag
+- Full-screen detail view toggle via the `Enter` key
+- Scroll position indicator added to the status bar
+- Config file path added to the status bar
+
+#### Engineering & CI
+- Unit tests for `api` and `merge` packages
+- GitHub Actions CI pipeline
+- golangci-lint integration
+
 ## [0.1.0] - 2026-03-19
 
 ### Added

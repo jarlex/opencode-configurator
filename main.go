@@ -15,6 +15,7 @@ import (
 )
 
 func main() {
+	splitRatio := flag.Int("split", 30, "split ratio for list view vs detail view")
 	// Default paths
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -53,7 +54,7 @@ func main() {
 
 	// Create the TUI app with initial offline state
 	// API enrichment happens ASYNC via tea.Cmd — not blocking first render (NFR-1)
-	app := tui.NewApp(state, client)
+	app := tui.NewApp(state, client, *splitRatio, *configFlag)
 
 	// Pass skills warning through the proper Warning channel (not APIError)
 	if skillsWarning != "" {

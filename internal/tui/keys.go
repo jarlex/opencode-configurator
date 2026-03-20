@@ -7,10 +7,6 @@ type KeyMap struct {
 	// Navigation
 	Tab      key.Binding
 	ShiftTab key.Binding
-	Tab1     key.Binding
-	Tab2     key.Binding
-	Tab3     key.Binding
-	Tab4     key.Binding
 	Up       key.Binding
 	Down     key.Binding
 
@@ -21,10 +17,14 @@ type KeyMap struct {
 	HalfPageDn key.Binding
 
 	// Actions
-	Filter    key.Binding
-	Refresh   key.Binding
-	Quit      key.Binding
-	Help      key.Binding
+	Filter       key.Binding
+	Refresh      key.Binding
+	Quit         key.Binding
+	Help         key.Binding
+	ToggleHidden key.Binding
+	CopyDetail   key.Binding
+	FullScreen   key.Binding
+
 	ForceQuit key.Binding
 	Escape    key.Binding
 }
@@ -39,22 +39,6 @@ func DefaultKeyMap() KeyMap {
 		ShiftTab: key.NewBinding(
 			key.WithKeys("shift+tab"),
 			key.WithHelp("shift+tab", "prev tab"),
-		),
-		Tab1: key.NewBinding(
-			key.WithKeys("1"),
-			key.WithHelp("1", "tab 1"),
-		),
-		Tab2: key.NewBinding(
-			key.WithKeys("2"),
-			key.WithHelp("2", "tab 2"),
-		),
-		Tab3: key.NewBinding(
-			key.WithKeys("3"),
-			key.WithHelp("3", "tab 3"),
-		),
-		Tab4: key.NewBinding(
-			key.WithKeys("4"),
-			key.WithHelp("4", "tab 4"),
 		),
 		Up: key.NewBinding(
 			key.WithKeys("up", "k"),
@@ -96,6 +80,19 @@ func DefaultKeyMap() KeyMap {
 			key.WithKeys("?"),
 			key.WithHelp("?", "help"),
 		),
+		ToggleHidden: key.NewBinding(
+			key.WithKeys("h"),
+			key.WithHelp("h", "toggle hidden"),
+		),
+		CopyDetail: key.NewBinding(
+			key.WithKeys("y"),
+			key.WithHelp("y", "copy detail"),
+		),
+		FullScreen: key.NewBinding(
+			key.WithKeys("enter"),
+			key.WithHelp("enter", "fullscreen"),
+		),
+
 		ForceQuit: key.NewBinding(
 			key.WithKeys("ctrl+c"),
 			key.WithHelp("ctrl+c", "force quit"),

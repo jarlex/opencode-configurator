@@ -9,6 +9,14 @@ import (
 
 // RenderAgentDetail renders a styled detail view for an Agent.
 func RenderAgentDetail(a *model.Agent) string {
+	s := renderAgentHeader(a)
+	s += renderAgentTools(a)
+	s += renderAgentPermissions(a)
+	s += renderAgentPrompt(a)
+	return s
+}
+
+func renderAgentHeader(a *model.Agent) string {
 	s := DetailTitle.Render(a.Name) + "\n\n"
 	s += DetailLabel.Render("Mode: ") + DetailValue.Render(a.Mode) + "\n"
 	if a.Model != "" {
@@ -29,21 +37,26 @@ func RenderAgentDetail(a *model.Agent) string {
 	if a.Hidden {
 		s += DetailLabel.Render("Hidden: ") + DetailValue.Render("yes") + "\n"
 	}
+	return s
+}
 
-	// Tools section
-	if len(a.Tools) > 0 {
-		s += "\n" + DetailLabel.Render("Tools:") + "\n"
-		for tool, enabled := range a.Tools {
-			status := "  \u2713 "
-			if !enabled {
-				status = "  \u2717 "
-			}
-			s += status + tool + "\n"
-		}
+func renderAgentTools(a *model.Agent) string {
+	if len(a.Tools) == 0 {
+		return ""
 	}
+	s := "\n" + DetailLabel.Render("Tools:") + "\n"
+	for tool, enabled := range a.Tools {
+		status := "  \u2713 "
+		if !enabled {
+			status = "  \u2717 "
+		}
+		s += status + tool + "\n"
+	}
+	return s
+}
 
-	// Permissions summary
-	s += "\n" + DetailLabel.Render("Permissions:") + "\n"
+func renderAgentPermissions(a *model.Agent) string {
+	s := "\n" + DetailLabel.Render("Permissions:") + "\n"
 	if a.Permission.Edit != "" {
 		s += "  Edit: " + a.Permission.Edit + "\n"
 	}
@@ -65,13 +78,15 @@ func RenderAgentDetail(a *model.Agent) string {
 			s += "    " + pattern + ": " + perm + "\n"
 		}
 	}
+	return s
+}
 
-	// Prompt section — always shown in full (scrollable via viewport)
-	if a.Prompt != "" {
-		s += "\n" + DetailLabel.Render("Prompt:") + "\n"
-		s += DetailMuted.Render(a.Prompt) + "\n"
+func renderAgentPrompt(a *model.Agent) string {
+	if a.Prompt == "" {
+		return ""
 	}
-
+	s := "\n" + DetailLabel.Render("Prompt:") + "\n"
+	s += DetailMuted.Render(a.Prompt) + "\n"
 	return s
 }
 
