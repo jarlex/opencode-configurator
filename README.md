@@ -4,7 +4,7 @@ A terminal dashboard for inspecting and exploring your [OpenCode](https://openco
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│  Agents │ Skills │ MCP │ Providers                                  │
+│  Agents (6) │ Skills (12) │ MCP (3) │ Providers (2)                 │
 ├───────────────┬─────────────────────────────────────────────────────┤
 │ ▸ orchestrator│  Name:        orchestrator                         │
 │   sdd-apply   │  Mode:        primary                              │
@@ -22,7 +22,9 @@ A terminal dashboard for inspecting and exploring your [OpenCode](https://openco
 
 ## Features
 
-- **4 navigable tabs** — Agents, Skills, MCP Servers, and Providers
+- **4 navigable tabs** — Agents, Skills, MCP Servers, and Providers (switch quickly with `1`-`4` keys)
+- **Dynamic tab counts** — instantly see how many items are in each section (e.g., "Agents (10)")
+- **Alphabetical sorting** — list items are automatically sorted A-Z for easy scanning
 - **Offline-first** — launches instantly from your `opencode.json` config file; no running server required
 - **Live API enrichment** — connects to the OpenCode API for real-time MCP status and tool data
 - **Filterable lists** — fuzzy search across all items with `/`
@@ -72,6 +74,7 @@ opencode-configurator --url http://localhost:4096 --config ./opencode.json
 
 | Key | Action |
 |-----|--------|
+| `1`-`4` | Quick switch to tabs 1 through 4 |
 | `Tab` | Next tab |
 | `Shift+Tab` | Previous tab |
 | `j` / `↓` | Next item in list |
